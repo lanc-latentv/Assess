@@ -1,0 +1,136 @@
+1)
+select p.product_category, avg(sales_amount) as avg_sales_amt 
+from sales_records s join products p
+using(product_id)
+ where datediff(curdate(),sales_date)>30
+ group by p.product_category;
+ 
+ 
+2)
+
+ select*,rank() over(order by sales_amount desc) from sales_records limit 3;
+
+3)
+ SELECT *,percent_rank() OVER(ORDER BY SALES_AMOUNT),
+ ROUND(percent_rank() OVER( ORDER BY SALES_AMOUNT),2) FROM
+ SALES_RECORDS;
+
+4)
+
+SELECT C.CUSTOMER_ID, CASE
+WHEN COUNT(S.CUSTOMER_ID) IN QUARTER(SALES_DATE4)
+THEN "CONSISTENT BUYERS"
+ELSE  "OCCASIONAL BUYERS"
+END
+FROM CUSTOMERS C JOIN Sales_Records S USING(CUSTOMER_ID)
+GROUP BY C.CUSTOMER_ID;
+
+
+
+lab 2
+
+-- 5
+
+SELECT f.DEPARTURE_AIRPORT,f.ARRIVAL_AIRPORT,AVG(t.TICKET_PRICE) , flight_id from 
+flights f join tickets t using(flight_id) group by flight_id;
+
+-- 6
+
+select f.flight_number,f.departure_date,count(t.passenger_id) as ticket_count,
+ t.ticket_price 
+from flights f join tickets t using (flight_id) 
+ group by flight_number,f.departure_date, t.ticket_price 
+ order by ticket_price desc;
+
+-- 7
+
+select p.passenger_name,p.frequent_flyer_status,
+sum(t.ticket_price) as total_amount_spent
+from passengers p join tickets t using(passenger_id)
+group by p.passenger_name,p.frequent_flyer_status
+order by total_amount_spent desc limit 5;
+
+--8
+
+
+
+LAB 3
+
+--9
+select AVG(extract(minute from play_date))AS AVV from PlayerScores
+ORDER BY AVV DESC;
+
+
+--10
+
+select g.game_name,g.game_id,count(pp.player_id) as total_no_of_players from playerscores pp join
+games g using (game_id) group by g.game_name,g.game_id order by total_no_of_players desc limit 3;
+
+--11
+
+SELECT MAX(SCORE),
+AVG(SCORE),GAME_ID,COUNT(PLAYER_ID) FROM PLAYERSCORES GROUP BY GAME_ID;
+
+--12
+
+
+
+
+
+LAB 4
+
+--13
+
+SELECT T.DOCTOR_ID,D.DOCTOR_NAME,SUM(T.COST) AS TOTAL_COST FROM Treatments T
+JOIN DOCTORS D USING(DOCTOR_ID) GROUP BY T.DOCTOR_ID,D.DOCTOR_NAME
+ORDER BY TOTAL_COST DESC;
+
+
+--14
+
+SELECT TREATMENT_NAME
+,SUM(COST) AS CCOST,percent_rank() over
+ (ORDER BY SUM(COST) DESC )  FROM Treatments T
+JOIN DOCTORS D USING(DOCTOR_ID)
+GROUP BY TREATMENT_NAME;
+
+
+--15
+
+SELECT PATIENT_ID,PATIENT_NAME,ADMISSION_DATE,DISCHARGE_DATE 
+FROM PATIENTS
+WHERE datediff(DISCHARGE_DATE,ADMISSION_DATE)<30
+ORDER BY ADMISSION_DATE ASC;
+
+
+LAB 5
+
+--17
+
+SELECT C.DEPARTMENT,E.SEMESTER,AVG(GRADE)
+FROM COURSES C JOIN ENROLLMENTS E USING(COURSE_ID)
+GROUP BY C.DEPARTMENT,E.SEMESTER;
+
+--18
+
+SELECT S.MAJOR,COUNT(E.STUDENT_ID) AS TOTAL_STUDENTS,S.ENROLLMENT_YEAR
+FROM STUDENTS S JOIN ENROLLMENTS E USING(STUDENT_ID)
+GROUP BY S.MAJOR,S.ENROLLMENT_YEAR
+ORDER BY TOTAL_STUDENTS DESC
+
+--19
+
+SELECT S.STUDENT_ID,S.STUDENT_NAME,E.SEMESTER,SUM(C.CREDITS) AS TOTAL_CREDITS
+FROM STUDENTS S JOIN ENROLLMENTS E USING(STUDENT_ID) JOIN COURSES C USING(COURSE_ID)
+GROUP BY  S.STUDENT_ID,S.STUDENT_NAME,E.SEMESTER;
+
+--20
+
+select * from (
+	select C.COURSE_NAME,S.ENROLLMENT_YEAR,
+	rank() over(partition by ENROLLMENT_YEAR order by COUNT(STUDENT_ID) desc) as rnk
+	from STUDENTS S JOIN ENROLLMENTS E USING(STUDENT_ID) JOIN COURSES C 
+    USING(COURSE_ID) GROUP BY S.ENROLLMENT_YEAR,C.COURSE_NAME
+) x
+where x.rnk < 4;
+
