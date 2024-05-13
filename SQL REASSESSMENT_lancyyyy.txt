@@ -1,0 +1,283 @@
+SQL REASSESSMENT
+
+create database ra1;
+use ra1;
+
+1)
+
+SELECT 
+    d.name AS DirectorName,
+    COUNT(m.movie_id) AS NumberOfMovies,
+    SUM(m.box_office_million) AS TotalEarnings
+FROM 
+    Directors d
+JOIN 
+    Movies m ON d.director_id = m.director_id
+GROUP BY 
+    d.director_id, d.name
+HAVING 
+    SUM(m.box_office_million) > 200
+ORDER BY 
+    TotalEarnings DESC;
+
+
+2)
+
+3)
+
+SELECT 
+    m.title AS MovieTitle,
+    m.box_office_million AS BoxOfficeEarnings
+FROM 
+    Movies m
+JOIN 
+    Movie_Genres mg ON m.movie_id = mg.movie_id
+JOIN 
+    Genres g ON mg.genre_id = g.genre_id
+WHERE 
+    g.genre_name IN ('Science Fiction', 'Adventure');
+
+
+4)
+SELECT 
+    YEAR(m.release_date) AS ReleaseYear,
+    MONTH(m.release_date) AS ReleaseMonth,
+    g.genre_name AS Genre,
+    COUNT(m.movie_id) AS NumberOfMovies
+FROM 
+    Movies m
+JOIN 
+    Movie_Genres mg ON m.movie_id = mg.movie_id
+JOIN 
+    Genres g ON mg.genre_id = g.genre_id
+GROUP BY 
+    ReleaseYear, ReleaseMonth, Genre
+WITH ROLLUP
+ORDER BY 
+    ReleaseYear, ReleaseMonth, Genre;
+
+
+5)
+SELECT 
+    Genre,
+    TotalEarnings
+FROM (
+SELECT 
+g.genre_name AS Genre,SUM(m.box_office_million) AS TotalEarnings,
+ROW_NUMBER() OVER (ORDER BY SUM(m.box_office_million) DESC) AS GenreRank
+FROM 
+Movies m JOIN 
+ Movie_Genres mg ON m.movie_id = mg.movie_id
+ JOIN Genres g ON mg.genre_id = g.genre_id
+        GROUP BY 
+            g.genre_id, g.genre_name
+    ) AS RankedGenres
+WHERE 
+    GenreRank <= 3
+UNION ALL
+SELECT 
+    'Overall Total',
+    SUM(TotalEarnings)
+FROM 
+    (
+        SELECT 
+            g.genre_name AS Genre,
+            SUM(m.box_office_million) AS TotalEarnings,
+            ROW_NUMBER() OVER (ORDER BY SUM(m.box_office_million) DESC) AS GenreRank
+        FROM 
+            Movies m
+        JOIN 
+            Movie_Genres mg ON m.movie_id = mg.movie_id
+        JOIN 
+            Genres g ON mg.genre_id = g.genre_id
+        GROUP BY 
+            g.genre_id, g.genre_name
+    ) AS RankedGenres
+WHERE 
+    GenreRank <= 3;
+
+
+
+
+6)
+
+
+
+
+
+7)
+SELECT s.supplier_id, s.supplier_name, s.city, SUM(p.price * t.quantity) AS total_revenue
+FROM suppliers s
+JOIN products p ON s.supplier_id = p.supplier_id
+JOIN transactions t ON p.product_id = t.product_id
+WHERE t.transaction_date >= DATE_SUB(CURRENT_DATE(), INTERVAL 1 YEAR)
+GROUP BY s.supplier_id, s.supplier_name, s.city
+ORDER BY total_revenue DESC
+LIMIT 3;
+
+
+8)
+SELECT p.product_id,p.product_name,p.category,p.price,
+(p.price - (select avg(price) from products)) AS profit_margin
+FROM products p
+ORDER BY p.category,profit_margin DESC;
+
+
+9)
+SELECT product_id,product_name,category,price,
+CASE 
+WHEN price <= 100 THEN 'Low'
+WHEN price <= 500 THEN 'Medium'
+ELSE 'High'
+END AS price_t
+FROM products;
+
+
+10)
+SELECT product_id,product_name,category,quantity,
+(SELECT SUM(quantity) FROM  products p2 WHERE 
+p2.category = p1.category 
+AND p2.product_id <= p1.product_id
+) AS cumulative_sales_quantity
+FROM products p1
+ORDER BY category, product_id;
+
+
+11)
+SELECT p.product_id,p.product_name,p.category,
+SUM(t.quantity) AS total_sales_quantity
+FROM products p
+JOIN 
+transactions t ON p.product_id = t.product_id
+GROUP BY 
+p.product_id,p.product_name,p.category
+ORDER BY total_sales_quantity DESC LIMIT 5;
+
+
+
+12)
+SELECT 
+    transaction_date,
+    COUNT(transaction_id) AS products_sold
+FROM 
+    Transactions
+GROUP BY 
+    transaction_date
+ORDER BY 
+    transaction_date;
+
+
+
+13)
+SELECT 
+    s.StudentID,
+    s.Name AS StudentName
+FROM 
+    Students s
+LEFT JOIN 
+    Classes c ON s.ClassID = c.ClassID
+WHERE 
+    c.ClassID IS NULL;
+
+
+
+14)
+
+SELECT 
+    t.TeacherID,
+    t.TeacherName
+FROM 
+    Teachers t
+LEFT JOIN 
+    Classes c ON t.TeacherID = c.TeacherID
+WHERE 
+    c.ClassID IS NULL;
+
+
+
+15)
+SELECT TeacherName AS Name
+FROM Teachers
+UNION
+SELECT Name
+FROM Students;
+
+
+
+16)
+SELECT DISTINCT
+    t.TeacherID,
+    t.TeacherName
+FROM
+    Teachers t
+JOIN
+    Classes c ON t.TeacherID = c.TeacherID
+JOIN
+    Students s ON c.ClassID = s.ClassID
+JOIN
+    Grades g ON s.StudentID = g.StudentID
+WHERE
+    g.Score > 65;
+
+
+
+17)
+SELECT 
+    g1.StudentID,
+    s.Name AS StudentName
+FROM 
+    Grades g1
+JOIN 
+    Grades g2 ON g1.StudentID = g2.StudentID
+JOIN 
+    Students s ON g1.StudentID = s.StudentID
+WHERE 
+    g1.Subject = g2.Subject
+    AND g1.Score < g2.Score;
+
+
+
+18)
+SELECT 
+    c.name AS CandidateName,e.election_year,
+    AVG(CASE WHEN e.election_year < 2024 THEN e.votes ELSE NULL END) AS AverageVotesLastThreeYears,
+    MAX(CASE WHEN e.election_year = 2024 THEN e.votes ELSE NULL END) AS VotesCurrentYear,
+    MAX(CASE WHEN e.election_year = 2024 THEN e.votes ELSE NULL END) - 
+    AVG(CASE WHEN e.election_year < 2024 THEN e.votes ELSE NULL END) AS VoteDifference
+FROM 
+    Candidates c
+JOIN 
+    Election_Results e ON c.candidate_id = e.candidate_id
+GROUP BY 
+    c.name,e.election_year;
+
+
+19)
+WITH cte1 AS (
+SELECT er.constituency_id,c.name AS CandidateName,er.votes,
+ROW_NUMBER() OVER (PARTITION BY er.constituency_id ORDER BY er.votes DESC) AS Rankk
+FROM Election_Results er
+JOIN Candidates c ON er.candidate_id = c.candidate_id
+)
+SELECT 
+    vr.constituency_id,
+    vr.CandidateName AS LeadingCandidate,
+    vr.votes AS LeadingVotes,
+    vr.votes - COALESCE(vr_next.votes, 0) AS VoteDifference,
+    vr_next.CandidateName AS NextCandidate
+FROM cte1 vr
+LEFT JOIN 
+    cte1 vr_next ON vr.constituency_id = vr_next.constituency_id AND vr.Rankk = vr_next.Rankk + 1;
+
+
+20)
+SELECT 
+    constituency_id,
+    candidate_id,
+    votes,
+    election_year,
+    AVG(votes) OVER (ORDER BY election_year ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS moving_average
+FROM 
+    Election_Results
+ORDER BY 
+    election_year;
